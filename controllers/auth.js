@@ -20,6 +20,7 @@ exports.register = async (req, res) => {
 
     //step 2 ตรวจสอบว่ามีผู้ใช้ที่ลงทะเบียนด้วยอีเมลนี้แล้วหรือไม่
     const user = await prisma.user.findFirst({
+      // where: is used in findUnique, findMany, update, and delete
       where: {
         email: email,
       },
@@ -67,9 +68,20 @@ exports.login = async (req, res) => {
     if (!isPasswordMath) {
       return res.status(400).json({ message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
     }
-
-    
-    res.send("Login Success");
+    //step 3 Create Payload
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    //step 4 Generate Token
+    jwt.sign(payload, process.env.SECRET, { expiresIn: "1D" }, (err, token) => {
+      if (err) {
+        return res.status(500).json({ message: "Server Error" });
+      }
+      res.json({ payload, token });
+    });
+   
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error" });
